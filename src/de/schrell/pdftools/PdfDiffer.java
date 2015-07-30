@@ -113,10 +113,16 @@ public class PdfDiffer {
     /**
      * im vor ausbearbeitete Seiten
      */
-    private static final int PREFETCH = 40;
+    private static final int PREFETCH = 20;
 
+    /**
+     * Fortschrittsbalken.
+     */
     private ProgressIndicator progress;
 
+    /**
+     * Schnelles Berechnen der Seiten um die aktuelle herum.
+     */
     ExecutorService exer = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
         r -> {
@@ -125,6 +131,9 @@ public class PdfDiffer {
             return t;
         });
 
+    /**
+     * Vorausberechnung aller Seiten mit halber Kraft.
+     */
     ExecutorService miniExer = Executors.newFixedThreadPool(
         Math.max(1, Runtime.getRuntime().availableProcessors() / 2),
         r -> {
@@ -133,6 +142,9 @@ public class PdfDiffer {
             return t;
         });
 
+    /**
+     * Konstruktor.
+     */
     public PdfDiffer(final String pdf1, final String pdf2) {
         this.pdf1 = pdf1;
         this.pdf2 = pdf2;
@@ -185,8 +197,6 @@ public class PdfDiffer {
 
     /**
      * calculates the number of pages regarding display type
-     *
-     * @return the number of pages
      */
     private int maxPage() {
         switch (this.disp) {
