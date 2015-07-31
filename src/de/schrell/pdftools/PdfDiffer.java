@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -19,6 +17,8 @@ import javax.imageio.ImageIO;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import de.schrell.fx.FxHelper;
+import de.schrell.fx.RadioButtonGroup;
 import de.schrell.tools.TempDir;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -26,20 +26,15 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 /**
@@ -59,9 +54,22 @@ public class PdfDiffer {
      * How to display the files
      */
     enum DisplayType {
-        DIFF, OLD, NEW;
+
+        DIFF("DIFF"),
+        OLD("ALT"),
+        NEW("NEU");
+
+        String text;
+
+        DisplayType(final String text) {
+            this.text = text;
+        }
+
+        @Override
+        public String toString() {
+            return this.text;
+        }
     }
-    private DisplayType disp = DisplayType.DIFF;
 
     /**
      * Bild-Ansicht.
@@ -145,11 +153,7 @@ public class PdfDiffer {
             return t;
         });
 
-    private final RadioButton radioButtonDIFF = new RadioButton("DIFF");
-
-    private final RadioButton radioButtonALT = new RadioButton("ALT");
-
-    private final RadioButton radioButtonNEU = new RadioButton("NEU");
+    private RadioButtonGroup<DisplayType> radioButtonGroup;
 
     /**
      * Konstruktor.
@@ -164,29 +168,9 @@ public class PdfDiffer {
             this.tmpdir.mkdir();
         } catch (final IOException e) {
             LOGGER.error("Temporäres Verzeichnis konnte nicht erzeugt werden.", e);
-            this.createMessageDialog(AlertType.ERROR, "Verzeichnisproblem...", "Das temporäre Verzeichnis konnte nicht angelegt werden.", e).showAndWait();
+            FxHelper.createMessageDialog(AlertType.ERROR, "Verzeichnisproblem...", "Das temporäre Verzeichnis konnte nicht angelegt werden.", e).showAndWait();
             System.exit(1);
         }
-    }
-
-    public Alert createMessageDialog(final AlertType type, final String header, final String text, final Throwable e) {
-        final Alert alert = new Alert(type, text, ButtonType.OK);
-        alert.setHeaderText(header);
-        if (e != null) {
-            this.addExceptionToAlert(alert, e);
-        }
-        return alert;
-    }
-
-    public Alert createMessageDialog(final AlertType type, final String header, final String text) {
-        return this.createMessageDialog(type, header, text, null);
-    }
-
-    private String getStackTrace(final Throwable e) {
-        final StringWriter sw = new StringWriter();
-        final PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-        return sw.toString();
     }
 
     /**
@@ -208,7 +192,7 @@ public class PdfDiffer {
      * calculates the number of pages regarding display type
      */
     private int maxPage() {
-        switch (this.disp) {
+        switch (this.radioButtonGroup.getValue()) {
             case OLD:
                 return this.maxPages1;
             case NEW:
@@ -222,8 +206,8 @@ public class PdfDiffer {
     }
 
     private void searchNextDifference() {
-        if (this.disp != DisplayType.DIFF) {
-            final Alert alert = this.createMessageDialog(
+        if (this.radioButtonGroup.getValue() != DisplayType.DIFF) {
+            final Alert alert = FxHelper.createMessageDialog(
                 AlertType.ERROR,
                 "Das geht nicht...",
                 "Es wird nun die DIFF-Darstellung eingeschaltet");
@@ -266,7 +250,7 @@ public class PdfDiffer {
         final String path = this.tmpdir.getAbsolutePath() + File.separator;
         final String imBin = (this.imhome == null || this.imhome.isEmpty()) ? "" : this.imhome + File.separator;
         String name;
-        switch (this.disp) {
+        switch (this.radioButtonGroup.getValue()) {
             case OLD:
                 name = String.format("OLD%08d.png", n);
                 cmd = new String[] { imBin + "convert",
@@ -334,7 +318,7 @@ public class PdfDiffer {
                     String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(), this.maxPages1, this.maxPages2)));
             } catch (final IOException e) {
                 LOGGER.error("Fehler beim Einlesen des Bildes", e);
-                this.createMessageDialog(
+                FxHelper.createMessageDialog(
                     AlertType.ERROR,
                     "Einlesefehler",
                     "Fehler beim Einlesen einer Seiten-Bildes", e).showAndWait();
@@ -384,11 +368,13 @@ public class PdfDiffer {
             this.miniExer.execute(() -> this.doubledImage(pre, true));
         }
 
+        this.registerKeys(root);
+
         this.display();
 
     }
 
-    public void registerKeys(final Pane pane) {
+    private void registerKeys(final Pane pane) {
         pane.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case RIGHT:
@@ -423,13 +409,6 @@ public class PdfDiffer {
         return buttons;
     }
 
-    private void createProgressBar(final VBox buttons) {
-        this.progress = new ProgressBar();
-        this.progress.setMaxWidth(Double.MAX_VALUE);
-        buttons.getChildren().add(this.progress);
-        this.progress.setProgress(0);
-    }
-
     void setProgress(final int value) {
         Platform.runLater(() -> this.progress.setProgress((double)value / this.maxPage()));
     }
@@ -443,20 +422,12 @@ public class PdfDiffer {
         });
     }
 
-    private void forwardOnePage() {
-        this.pageNo++;
-        if (this.pageNo > this.maxPage() - 1) {
-            this.pageNo = this.maxPage() - 1;
-        }
-        this.display();
-    }
-
-    private void createSearchButton(final VBox buttons) {
-        final Button buttonSearch = new Button("Search next Diff");
-        buttons.getChildren().add(buttonSearch);
-        buttonSearch.setPrefWidth(Double.MAX_VALUE);
-        buttonSearch.setOnAction(event -> {
-            this.searchNextDifference();
+    private void createBackButton(final VBox buttons) {
+        final Button buttonBack = new Button("<");
+        buttonBack.setPrefWidth(Double.MAX_VALUE);
+        buttons.getChildren().add(buttonBack);
+        buttonBack.setOnAction(event -> {
+            this.backwardOnePage();
         });
     }
 
@@ -469,11 +440,6 @@ public class PdfDiffer {
         });
     }
 
-    private void firstPage() {
-        this.pageNo = 0;
-        this.display();
-    }
-
     private void createFFButton(final VBox buttons) {
         final Button buttonFForward = new Button(">>>>");
         buttons.getChildren().add(buttonFForward);
@@ -483,26 +449,13 @@ public class PdfDiffer {
         });
     }
 
-    private void lastPage() {
-        this.pageNo = this.maxPage() - 1;
-        this.display();
-    }
-
-    private void createBackButton(final VBox buttons) {
-        final Button buttonBack = new Button("<");
-        buttonBack.setPrefWidth(Double.MAX_VALUE);
-        buttons.getChildren().add(buttonBack);
-        buttonBack.setOnAction(event -> {
-            this.backwardOnePage();
+    private void createSearchButton(final VBox buttons) {
+        final Button buttonSearch = new Button("Search next Diff");
+        buttons.getChildren().add(buttonSearch);
+        buttonSearch.setPrefWidth(Double.MAX_VALUE);
+        buttonSearch.setOnAction(event -> {
+            this.searchNextDifference();
         });
-    }
-
-    private void backwardOnePage() {
-        this.pageNo--;
-        if (this.pageNo < 0) {
-            this.pageNo = 0;
-        }
-        this.display();
     }
 
     private void createPageNumberField(final Pane buttons) {
@@ -531,66 +484,47 @@ public class PdfDiffer {
 
     private void createRadioButtons(final Pane buttons) {
         final HBox rb = new HBox();
-        final ToggleGroup tg = new ToggleGroup();
         rb.setPrefWidth(Double.MAX_VALUE);
-        this.radioButtonDIFF.setToggleGroup(tg);
-        this.radioButtonALT.setToggleGroup(tg);
-        this.radioButtonNEU.setToggleGroup(tg);
-        this.radioButtonDIFF.selectedProperty().set(true);
-        rb.getChildren().addAll(this.radioButtonDIFF, this.radioButtonALT, this.radioButtonNEU);
         buttons.getChildren().add(rb);
-        this.radioButtonDIFF.setOnAction(event -> {
-            this.disp = DisplayType.DIFF;
-            this.display();
-        });
-        this.radioButtonALT.setOnAction(event -> {
-            this.disp = DisplayType.OLD;
-            this.display();
-        });
-        this.radioButtonNEU.setOnAction(event -> {
-            this.disp = DisplayType.NEW;
-            this.display();
-        });
+        this.radioButtonGroup = new RadioButtonGroup<DisplayType>(DisplayType.class, rb, DisplayType.DIFF);
+        this.radioButtonGroup.addObserver((o, arg) -> this.display());
     }
 
-    void setDisplayType(final DisplayType type) {
-        this.disp = type;
-        switch(type) {
-            case DIFF:
-                this.radioButtonDIFF.selectedProperty().set(true);
-                break;
-            case NEW:
-                this.radioButtonNEU.selectedProperty().set(true);
-                break;
-            case OLD:
-                this.radioButtonALT.selectedProperty().set(true);
-                break;
-            default:
-                break;
+    private void createProgressBar(final VBox buttons) {
+        this.progress = new ProgressBar();
+        this.progress.setMaxWidth(Double.MAX_VALUE);
+        buttons.getChildren().add(this.progress);
+        this.progress.setProgress(0);
+    }
+
+    private void forwardOnePage() {
+        this.pageNo++;
+        if (this.pageNo > this.maxPage() - 1) {
+            this.pageNo = this.maxPage() - 1;
         }
+        this.display();
     }
 
-    void addExceptionToAlert(final Alert alert, final Throwable e) {
-        final TextArea textArea = new TextArea(this.getStackTrace(e));
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
+    private void backwardOnePage() {
+        this.pageNo--;
+        if (this.pageNo < 0) {
+            this.pageNo = 0;
+        }
+        this.display();
+    }
 
-        textArea.setMaxWidth(Double.MAX_VALUE);
-        textArea.setMaxHeight(Double.MAX_VALUE);
-        GridPane.setVgrow(textArea, Priority.ALWAYS);
-        GridPane.setHgrow(textArea, Priority.ALWAYS);
+    private void firstPage() {
+        this.pageNo = 0;
+        this.display();
+    }
 
-        final GridPane expContent = new GridPane();
-        expContent.setMaxWidth(Double.MAX_VALUE);
-        final Label label = new Label("Stacktrace der Execption:");
-        expContent.add(label, 0, 0);
-        expContent.add(textArea, 0, 1);
+    private void lastPage() {
+        this.pageNo = this.maxPage() - 1;
+        this.display();
+    }
 
-        alert.getDialogPane().setExpandableContent(expContent);
-
-        alert.setResizable(true);
-        alert.getDialogPane().setMinWidth(800);
-
+    private void setDisplayType(final DisplayType type) {
+        this.radioButtonGroup.setValue(type);
     }
 
 }

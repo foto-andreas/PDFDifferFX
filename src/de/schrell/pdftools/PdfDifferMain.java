@@ -2,6 +2,7 @@ package de.schrell.pdftools;
 
 import org.apache.log4j.Logger;
 
+import de.schrell.fx.FxHelper;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert.AlertType;
@@ -15,7 +16,6 @@ public class PdfDifferMain extends Application {
     private PdfDiffer pdfDiffer = null;
 
     public PdfDifferMain() {
-
     }
 
     @Override
@@ -31,14 +31,13 @@ public class PdfDifferMain extends Application {
 
         if (this.getParameters().getRaw().size() != 2) {
             LOGGER.error("Aufruf: java -jar PdfDiffer.jar alt.pdf neu.pdf");
-            this.pdfDiffer.createMessageDialog(AlertType.ERROR, "Programm-Parameter vergessn?",
+            FxHelper.createMessageDialog(AlertType.ERROR, "Programm-Parameter vergessn?",
                 "Es müssen zwei PDF-Dateien zum Vergleich angegeben werden.").showAndWait();
             System.exit(1);
         }
 
         final GridPane gridPane = new GridPane();
         final Scene scene = new Scene(gridPane);
-        this.pdfDiffer.registerKeys(gridPane);
 
         scene.getStylesheets().add(this.getClass().getResource("application.css").toExternalForm());
 
