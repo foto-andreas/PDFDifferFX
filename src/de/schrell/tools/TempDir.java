@@ -32,7 +32,8 @@ public class TempDir {
             attemptCount++;
             if (attemptCount > maxAttempts) {
                 throw new IOException(
-                    "The highly improbable has occurred! Failed to create a unique temporary directory after "
+                    "The highly improbable has occurred! Failed to "
+                        + "create a unique temporary directory after "
                         + maxAttempts + " attempts.");
             }
             final String dirName = prefix + UUID.randomUUID().toString();
