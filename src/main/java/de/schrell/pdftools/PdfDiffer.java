@@ -14,8 +14,8 @@ import java.util.concurrent.Executors;
 
 import javax.imageio.ImageIO;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.schrell.fx.FxHelper;
 import de.schrell.fx.RadioButtonGroup;
@@ -48,7 +48,7 @@ public class PdfDiffer {
     /**
      * Logger for this class
      */
-    private final static Logger LOGGER = Logger.getLogger(PdfDiffer.class);
+    private final static Logger LOGGER = LogManager.getLogger(PdfDiffer.class);
 
     /**
      * How to display the files
@@ -353,8 +353,6 @@ public class PdfDiffer {
         if (home == null) {
             home = ".";
         }
-
-        PropertyConfigurator.configure(home + File.separator + "log4j.properties");
 
         final Pane buttons = this.createButtons();
         root.add(buttons, 1, 1);

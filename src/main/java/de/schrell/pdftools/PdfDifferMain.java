@@ -1,6 +1,7 @@
 package de.schrell.pdftools;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.schrell.fx.FxHelper;
 import javafx.application.Application;
@@ -11,7 +12,7 @@ import javafx.stage.Stage;
 
 public class PdfDifferMain extends Application {
 
-    private final static Logger LOGGER = Logger.getLogger(PdfDifferMain.class);
+    private final static Logger LOGGER = LogManager.getLogger(PdfDifferMain.class);
 
     private PdfDiffer pdfDiffer = null;
 
@@ -39,7 +40,7 @@ public class PdfDifferMain extends Application {
         final GridPane gridPane = new GridPane();
         final Scene scene = new Scene(gridPane);
 
-        scene.getStylesheets().add(this.getClass().getResource("application.css").toExternalForm());
+        scene.getStylesheets().add(this.getClass().getResource("/application.css").toExternalForm());
 
         this.pdfDiffer.setup(gridPane);
 
