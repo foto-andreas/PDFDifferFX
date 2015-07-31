@@ -55,14 +55,17 @@ public class PdfDiffer {
      */
     private final static Logger LOGGER = Logger.getLogger(PdfDiffer.class);
 
-    enum DisplayType {
-        DIFF, OLD, NEW;
-    }
     /**
      * How to display the files
      */
+    enum DisplayType {
+        DIFF, OLD, NEW;
+    }
     private DisplayType disp = DisplayType.DIFF;
 
+    /**
+     * Bild-Ansicht.
+     */
     private final ImageView image = new ImageView();
 
     /**
@@ -142,6 +145,12 @@ public class PdfDiffer {
             return t;
         });
 
+    private final RadioButton radioButtonDIFF = new RadioButton("DIFF");
+
+    private final RadioButton radioButtonALT = new RadioButton("ALT");
+
+    private final RadioButton radioButtonNEU = new RadioButton("NEU");
+
     /**
      * Konstruktor.
      */
@@ -217,9 +226,9 @@ public class PdfDiffer {
             final Alert alert = this.createMessageDialog(
                 AlertType.ERROR,
                 "Das geht nicht...",
-                "Schalten Sie bitte die DIFF-Darstellung ein");
+                "Es wird nun die DIFF-Darstellung eingeschaltet");
             alert.showAndWait();
-            return;
+            this.setDisplayType(DisplayType.DIFF);
         }
         final Task<Void> task = new Task<Void>() {
             @Override
@@ -524,29 +533,41 @@ public class PdfDiffer {
         final HBox rb = new HBox();
         final ToggleGroup tg = new ToggleGroup();
         rb.setPrefWidth(Double.MAX_VALUE);
-        final RadioButton rb0 = new RadioButton("DIF");
-        rb0.setToggleGroup(tg);
-        final RadioButton rb1 = new RadioButton("ALT");
-        rb1.setToggleGroup(tg);
-        final RadioButton rb2 = new RadioButton("NEU");
-        rb2.setToggleGroup(tg);
-        rb0.selectedProperty().set(true);
-        rb.getChildren().add(rb0);
-        rb.getChildren().add(rb1);
-        rb.getChildren().add(rb2);
+        this.radioButtonDIFF.setToggleGroup(tg);
+        this.radioButtonALT.setToggleGroup(tg);
+        this.radioButtonNEU.setToggleGroup(tg);
+        this.radioButtonDIFF.selectedProperty().set(true);
+        rb.getChildren().addAll(this.radioButtonDIFF, this.radioButtonALT, this.radioButtonNEU);
         buttons.getChildren().add(rb);
-        rb0.setOnAction(event -> {
+        this.radioButtonDIFF.setOnAction(event -> {
             this.disp = DisplayType.DIFF;
             this.display();
         });
-        rb1.setOnAction(event -> {
+        this.radioButtonALT.setOnAction(event -> {
             this.disp = DisplayType.OLD;
             this.display();
         });
-        rb2.setOnAction(event -> {
+        this.radioButtonNEU.setOnAction(event -> {
             this.disp = DisplayType.NEW;
             this.display();
         });
+    }
+
+    void setDisplayType(final DisplayType type) {
+        this.disp = type;
+        switch(type) {
+            case DIFF:
+                this.radioButtonDIFF.selectedProperty().set(true);
+                break;
+            case NEW:
+                this.radioButtonNEU.selectedProperty().set(true);
+                break;
+            case OLD:
+                this.radioButtonALT.selectedProperty().set(true);
+                break;
+            default:
+                break;
+        }
     }
 
     void addExceptionToAlert(final Alert alert, final Throwable e) {
