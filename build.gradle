@@ -1,59 +1,30 @@
-apply plugin: 'eclipse'
-
-tasks.withType(Compile) {
-    options.encoding = 'UTF-8'
-}
-
-// Declares binary plugin and its required JavaFX classpath
-apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.plugin"
+apply plugin: 'java'
 
 repositories {
-    mavenCentral()
+    flatDir(name:'lib').dirs(rootProject.file('lib').listFiles())
 }
-    
+
 dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.3'
     compile group: 'org.swinglabs', name: 'pdf-renderer', version: '1.0.5'
 }
 
-run {
-    classpath += files('build/resources/main')
+sourceCompatibility = 8
+
+version = '1.0'
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'PDF-Differ',
+                   'Implementation-Version': version,
+                   'Main-Class': 'de.schrell.pdftools.PdfDifferMain'
+    }
+    doFirst {
+	from {
+       	    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA' 
 }
 
-// Configures plugin
-javafx {
-
-    // Points to JDK and its JavaFX libraries, also declares target runtime JDK
-    javaRuntime = '/opt/java'
-    
-    // Application name and ID presented by target OS
-    appID 'PdfDifferFx'
-    appName 'PDF-Differ FX'
-    
-    // Main class of application
-    mainClass 'de.schrell.pdftools.PdfDifferMain'
-    
-    // JVM arguments, system properties, application command line arguments
-    jvmArgs = ['-XX:+AggressiveOpts', '-XX:CompileThreshold=1']
-    systemProperties = ['prism.disableRegionCaching':'true']
-    arguments = ['/home/andreas/Dokumente/EZBKPDF1-EZBK-XX4D-JOB09109-TPLEX-S000029.PDF',
-                 '/home/andreas/Dokumente/RZSZPDF1-RZSZ-XX4D-JOB00075-TPLEX-S000063.PDF']
-
-    // Keystore credentials for signing JAR
-    // Generate key: keytool -genkey -alias release -keyalg RSA -keystore keystore.jks -keysize 2048
-//    releaseKey {
-//        alias = 'release'
-//        keyPass = getProjectProperty('keyStorePassword')
-//        keyStore = file("${System.properties['user.home']}/keystore/keystore.jks")
-//        storePass = getProjectProperty('storePassword')
-//    }
-    
-//    signingMode 'release'
-    
-    // ...
-}
-
-String getProjectProperty(String propertyName) {
-    project.hasProperty(propertyName) ? project.property(propertyName) : null
-}

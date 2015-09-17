@@ -39,7 +39,7 @@ public class FxHelper {
 
         final GridPane expContent = new GridPane();
         expContent.setMaxWidth(Double.MAX_VALUE);
-        final Label label = new Label("Stacktrace der Execption:");
+        final Label label = new Label("Stacktrace der Execption:"); //$NON-NLS-1$
         expContent.add(label, 0, 0);
         expContent.add(textArea, 0, 1);
 

@@ -8,6 +8,9 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.Pane;
 
+/**
+ * Gruppe von Radio-Buttons.
+ */
 public class RadioButtonGroup<T extends Enum<T>> extends Observable {
 
     private T value;

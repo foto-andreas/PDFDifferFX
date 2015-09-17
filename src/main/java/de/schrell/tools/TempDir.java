@@ -9,8 +9,9 @@ import java.util.UUID;
  * http://stackoverflow.com/questions/617414/create-a-
  * temporary-directory-in-java
  *
- * @author Keith Sheppard and Additions from Andreas Schrell
+ * @author Keith Sheppard and additions from Andreas Schrell
  */
+@SuppressWarnings("nls")
 public class TempDir {
 
     /**

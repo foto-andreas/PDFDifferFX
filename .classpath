@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="output" path="bin"/>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="src" path="src/test/resources"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER" exported="true"/>
-	<classpathentry sourcepath="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.apache.logging.log4j/log4j-api/2.3/source/2083f2f885111e2d672a28b5657c465360559663/log4j-api-2.3-sources.jar" kind="lib" path="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.apache.logging.log4j/log4j-api/2.3/jar/8d85ef2675d1b45fe78adad021f809bdf12f2eeb/log4j-api-2.3.jar" exported="true"/>
-	<classpathentry sourcepath="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.apache.logging.log4j/log4j-core/2.3/source/25185a3609b7a37dcb152daab7d9855cb4e915b6/log4j-core-2.3-sources.jar" kind="lib" path="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.apache.logging.log4j/log4j-core/2.3/jar/58a3e964db5307e30650817c5daac1e8c8ede648/log4j-core-2.3.jar" exported="true"/>
-	<classpathentry sourcepath="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.swinglabs/pdf-renderer/1.0.5/source/8b48b0e332e1d806b08a217a550f05ee5ffc0bd5/pdf-renderer-1.0.5-sources.jar" kind="lib" path="/oldRoot/home/andreas/.gradle/caches/artifacts-23/filestore/org.swinglabs/pdf-renderer/1.0.5/jar/da7e5d48afadcfa3c87fae1ff5c432d7dca8250e/pdf-renderer-1.0.5.jar" exported="true"/>
-	<classpathentry kind="lib" path="/opt/java/jre/lib/ext/jfxrt.jar" exported="true"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk64"/>
+	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-api-2.3.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-core-2.3.jar"/>
+	<classpathentry kind="lib" path="lib/pdf-renderer-1.0.5/pdf-renderer-1.0.5.jar"/>
+	<classpathentry kind="output" path="bin"/>
 </classpath>

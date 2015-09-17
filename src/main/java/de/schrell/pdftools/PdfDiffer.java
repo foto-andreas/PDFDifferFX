@@ -2,18 +2,26 @@ package de.schrell.pdftools;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.FieldPosition;
+import java.text.Format;
+import java.text.ParsePosition;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.imageio.ImageIO;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,14 +29,18 @@ import de.schrell.fx.FxHelper;
 import de.schrell.fx.RadioButtonGroup;
 import de.schrell.tools.TempDir;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -36,6 +48,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
 
 /**
  * Adapted from some examples to implement a Diff for PDF files. It uses
@@ -43,6 +57,7 @@ import javafx.scene.layout.VBox;
  *
  * @author joshua.marinacci@sun.com
  */
+@SuppressWarnings("nls")
 public class PdfDiffer {
 
     /**
@@ -122,6 +137,11 @@ public class PdfDiffer {
     private static volatile Collection<Integer> workin = new ConcurrentLinkedDeque<>();
 
     /**
+     * Returncodes von compare.
+     */
+    private static volatile ConcurrentHashMap<String, Integer> retCodes = new ConcurrentHashMap<>();
+
+    /**
      * im vor ausbearbeitete Seiten
      */
     private static final int PREFETCH = 20;
@@ -155,6 +175,8 @@ public class PdfDiffer {
 
     private RadioButtonGroup<DisplayType> radioButtonGroup;
 
+    private static DoubleProperty factor = new SimpleDoubleProperty(1.0);
+
     /**
      * Konstruktor.
      */
@@ -171,6 +193,17 @@ public class PdfDiffer {
             FxHelper.createMessageDialog(AlertType.ERROR, "Verzeichnisproblem...", "Das temporäre Verzeichnis konnte nicht angelegt werden.", e).showAndWait();
             System.exit(1);
         }
+        this.image.setSmooth(true);
+        this.image.setPreserveRatio(true);
+        this.image.setCache(true);
+    }
+
+    private Stage getStage() {
+        final Scene scene = this.image.getScene();
+        if (scene == null) {
+            return null;
+        }
+        return ((Stage)(scene.getWindow()));
     }
 
     /**
@@ -246,86 +279,193 @@ public class PdfDiffer {
             return false;
         }
 
-        String cmd[];
+        String cmdOld[];
+        String cmdNew[];
+        String cmdDiff[];
         final String path = this.tmpdir.getAbsolutePath() + File.separator;
         final String imBin = (this.imhome == null || this.imhome.isEmpty()) ? "" : this.imhome + File.separator;
-        String name;
+        String nameOld;
+        String nameNew;
+        String nameDiff;
+        final String geometry = calcGeometry();
+        nameOld = String.format("OLD%08d.png", n);
+        cmdOld = new String[] { imBin + "convert",
+                "-density", "300",
+                "-quality", "100",
+                "-geometry", geometry,
+                String.format("%s[%d]", this.pdf1, n),
+                "-channel", "rgba",
+                "-alpha", "background",
+                path + "tmp" + nameOld };
+        logCommand(cmdOld);
+        nameNew = String.format("NEW%08d.png", n);
+        cmdNew = new String[] { imBin + "convert",
+                "-density", "300",
+                "-quality", "100",
+                "-geometry", geometry,
+                String.format("%s[%d]", this.pdf2, n),
+                "-channel", "rgba",
+                "-alpha", "background",
+                path + "tmp" + nameNew };
+        logCommand(cmdNew);
+        nameDiff = String.format("DIF%08d.png", n);
+        cmdDiff = new String[] { imBin + "compare",
+                "-density", "80",
+                "-quality", "100",
+                "-size", geometry,
+                "-compose", "src",
+                String.format("%s[%d]", this.pdf1, n),
+                String.format("%s[%d]", this.pdf2, n),
+                "-compose", "blend",
+                String.format("%s[%d]", this.pdf1, n),
+                path + "tmp" + nameDiff };
+        logCommand(cmdDiff);
         switch (this.radioButtonGroup.getValue()) {
-            case OLD:
-                name = String.format("OLD%08d.png", n);
-                cmd = new String[] { imBin + "convert",
-                    String.format("%s[%d]", this.pdf1, n), path + "tmp" + name };
-                break;
-            case NEW:
-                name = String.format("NEW%08d.png", n);
-                cmd = new String[] { imBin + "convert",
-                    String.format("%s[%d]", this.pdf2, n), path + "tmp" + name };
-                break;
-            case DIFF:
-                name = String.format("DIF%08d.png", n);
-                cmd = new String[] { imBin + "compare",
-                    String.format("%s[%d]", this.pdf1, n),
-                    String.format("%s[%d]", this.pdf2, n), path + "tmp" + name };
-                break;
-            default:
-                return false;
-        }
-        final String filename = path + name;
-        if (!new File(filename).exists() && !workin.contains(n)) {
-            workin.add(n);
-            System.out.println("starting command:");
-            for (final String element : cmd) {
-                System.out.print(element + " ");
-            }
-            System.out.println();
-            try {
-                final Process proc = Runtime.getRuntime().exec(cmd);
-                proc.waitFor();
-                Files.move(Paths.get(path + "tmp" + name), Paths.get(filename), StandardCopyOption.ATOMIC_MOVE);
-                workin.remove(n);
-                System.out.println("workin on " + workin.size() + " items.");
-                System.out.println("done. File=" + filename);
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } catch (final IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            while (workin.contains(n)) {
-                try {
-                    Thread.sleep(100);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            System.out.println("reusing File=" + filename);
+        case OLD:
+            createFile(n, cmdOld, path, nameOld);
+            break;
+        case NEW:
+            createFile(n, cmdNew, path, nameNew);
+            break;
+        case DIFF:
+            createFile(n, cmdDiff, path, nameDiff);
+            break;
+        default:
         }
         boolean hasRed = false;
         if (!backGround) {
             BufferedImage bi;
             try {
-                bi = ImageIO.read(new File(filename));
+                String fileName;
+                switch (this.radioButtonGroup.getValue()) {
+                case OLD:
+                    fileName = path + geometry + nameOld;
+                    break;
+                case NEW:
+                    fileName = path + geometry + nameNew;
+                    break;
+                case DIFF:
+                    fileName = path + geometry + nameDiff;
+                    break;
+                default:
+                    fileName = "???";
+                }
+                bi = ImageIO.read(new File(fileName));
+                LOGGER.debug("SIZE BufferedImage: " + bi.getWidth() + "x" + bi.getHeight());
                 final Image image = SwingFXUtils.toFXImage(bi, null);
+                LOGGER.debug("SIZE Image: " + image.getWidth() + "x" + image.getHeight());
                 //                Platform.runLater(() ->
                 this.image.setImage(image);
                 //                );
                 if (hasRed(bi)) {
                     hasRed = true;
-                    System.out.println("ROT: " + (n + 1));
+                    LOGGER.info("ROT auf Seite: " + (n + 1));
                 }
-                System.out.println("image updated.");
+                LOGGER.debug("image updated.");
                 Platform.runLater(() -> this.info.setText(
                     String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(), this.maxPages1, this.maxPages2)));
             } catch (final IOException e) {
-                LOGGER.error("Fehler beim Einlesen des Bildes", e);
+                LOGGER.error("Fehler beim Einlesen eines Seiten-Bildes", e);
                 FxHelper.createMessageDialog(
                     AlertType.ERROR,
                     "Einlesefehler",
-                    "Fehler beim Einlesen einer Seiten-Bildes", e).showAndWait();
+                    "Fehler beim Einlesen eines Seiten-Bildes", e).showAndWait();
+                System.exit(1);
             }
             this.setProgress(this.pageNo);
         }
         return hasRed;
+    }
+
+    private static String calcGeometry() {
+        final String geometry = calcImageWidth() + "x" + calcImageHeight();
+        return geometry;
+    }
+
+    private static int createFile(final int n, final String[] cmd, final String path, final String name) {
+        if (!new File(path + name).exists() && !workin.contains(n)) {
+            return PdfDiffer.createPage(n, cmd, path, name);
+        } else {
+            waitForChain(n);
+            LOGGER.debug("reusing File=" + path + name);
+            return retCodes.get(name);
+        }
+    }
+
+    private static void waitForChain(final int n) {
+        while (workin.contains(n)) {
+            try {
+                Thread.sleep(100);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    private static int createPage(final int n, final String[] cmd, final String path, final String name) {
+        workin.add(n);
+        try {
+            final Process proc = Runtime.getRuntime().exec(cmd);
+            final int rc = proc.waitFor();
+            if (rc == 2) {
+                String stdout = "\n";
+                String stderr = "\n";
+                try (final InputStream errors = proc.getErrorStream()) {
+                    stderr = logStream(errors, Level.ERROR);
+                }
+                try (final InputStream output = proc.getInputStream()) {
+                    stdout = logStream(output, Level.INFO);
+                }
+                LOGGER.error("Fehler beim Aufruf von ImageMagick-Compare");
+                FxHelper.createMessageDialog(
+                    AlertType.ERROR,
+                    "Einlesefehler",
+                    "Fehler beim Aufruf von ImageMagick-Compare" +
+                    ":\nSTDOUT:\n" + stdout + "STDERR:\n" + stderr).showAndWait();
+                System.exit(1);
+
+            }
+            retCodes.put(name, rc);
+            Files.move(Paths.get(path + "tmp" + name), Paths.get(path + calcGeometry() + name), StandardCopyOption.ATOMIC_MOVE);
+            LOGGER.debug("renamed file: " + path + "tmp" + name + " -> " + path + name);
+            workin.remove(n);
+            LOGGER.debug("workin on " + workin.size() + " items.");
+            LOGGER.debug("done. File=" + path + name);
+            return rc;
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (final IOException e) {
+            LOGGER.error("Fehler beim Umwandeln oder Vergleichen einer Seite", e);
+            FxHelper.createMessageDialog(
+                AlertType.ERROR,
+                "Fehler beim Umwandeln",
+                "Fehler beim Umwandeln oder Vergleichen einer Seite", e).showAndWait();
+            System.exit(1);
+        }
+        return 2; // error or interrupt
+    }
+
+    private static String logStream(final InputStream stream, final Level level) throws IOException {
+        final StringBuilder ret = new StringBuilder();
+        try (InputStreamReader ir = new InputStreamReader(stream); final BufferedReader r = new BufferedReader(ir)) {
+            do {
+                final String line = r.readLine();
+                if (line == null) {
+                    break;
+                }
+                ret.append(line).append("\n");
+                LOGGER.log(level, line);
+            } while (true);
+        }
+        return ret.toString();
+    }
+
+    private static void logCommand(final String[] cmd) {
+        final StringBuilder asString = new StringBuilder("starting command:");
+        for (final String element : cmd) {
+            asString.append(" ").append(element);
+        }
+        LOGGER.debug(asString.toString());
     }
 
     static boolean hasRed(final BufferedImage bi) {
@@ -357,7 +497,8 @@ public class PdfDiffer {
         final Pane buttons = this.createButtons();
         root.add(buttons, 1, 1);
 
-        root.add(this.image, 0, 1);
+        final ScrollPane scrollPane = new ScrollPane(this.image);
+        root.add(scrollPane, 0, 1);
 
         root.add(this.info, 0, 0);
 
@@ -387,7 +528,8 @@ public class PdfDiffer {
                     this.searchNextDifference();
                     event.consume();
                     break;
-                default:
+                //$CASES-OMITTED$
+            default:
                     break;
             }
         });
@@ -396,6 +538,7 @@ public class PdfDiffer {
     private VBox createButtons() {
         final VBox buttons = new VBox();
         buttons.setMaxWidth(200);
+        buttons.setMinWidth(200);
         this.createForwardButton(buttons);
         this.createBackButton(buttons);
         this.createFFButton(buttons);
@@ -404,11 +547,30 @@ public class PdfDiffer {
         this.createPageNumberField(buttons);
         this.createRadioButtons(buttons);
         this.createProgressBar(buttons);
+        this.createQuitButton(buttons);
+        this.createFactor(buttons);
         return buttons;
     }
 
     void setProgress(final int value) {
         Platform.runLater(() -> this.progress.setProgress((double)value / this.maxPage()));
+    }
+
+    private static int calcImageWidth() {
+        return (int) ((Screen.getPrimary().getVisualBounds().getWidth() - 200 - 120) * factor.get());
+    }
+
+    private static int calcImageHeight() {
+        return (int) ((Screen.getPrimary().getVisualBounds().getHeight() - 120) * factor.get());
+    }
+
+    private void createQuitButton(final VBox buttons) {
+        final Button buttonQuit = new Button("Quit");
+        buttonQuit.setPrefWidth(Double.MAX_VALUE);
+        buttons.getChildren().add(buttonQuit);
+        buttonQuit.setOnAction(event -> {
+            this.getStage().close();
+        });
     }
 
     private void createForwardButton(final VBox buttons) {
@@ -454,6 +616,23 @@ public class PdfDiffer {
         buttonSearch.setOnAction(event -> {
             this.searchNextDifference();
         });
+    }
+
+    private void createFactor(final VBox buttons) {
+        final TextField text = new TextField("1");
+        text.textProperty().bindBidirectional(factor, new Format(){
+            private static final long serialVersionUID = 8921786586608917220L;
+            @Override
+            public StringBuffer format(final Object obj, final StringBuffer toAppendTo, final FieldPosition pos) {
+                return toAppendTo.append(obj);
+            }
+            @Override
+            public Object parseObject(final String source, final ParsePosition pos) {
+                return Double.parseDouble(source);
+            }});
+        text.textProperty().addListener((observable, oldValue, newValue)
+                -> {this.display(); this.image.getScene().getWindow().sizeToScene();});
+        buttons.getChildren().add(text);
     }
 
     private void createPageNumberField(final Pane buttons) {

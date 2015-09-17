@@ -10,32 +10,24 @@ import java.nio.channels.FileChannel;
 import com.sun.pdfview.PDFFile;
 
 /**
- * Some static methods for pdf files
- * 
- * @author Andreas Schrell
- * 
+ * Statische Methoden für PDF-Dateien.
  */
+@SuppressWarnings("nls")
 public class PdfProperties {
 
 	/**
-	 * tells the number of pages in a pdf file
-	 * 
-	 * @param fileName
-	 * @return the number of pages
+	 * Liefert die Anzahl Seiten eines PDF-Files
 	 */
-	public static int numberOfPages(String fileName) {
-		File file1 = new File(fileName);
-		RandomAccessFile raf1;
-		try {
-			raf1 = new RandomAccessFile(file1, "r");
-			FileChannel channel1 = raf1.getChannel();
-			ByteBuffer buf1 = channel1.map(FileChannel.MapMode.READ_ONLY, 0,
-					channel1.size());
-			PDFFile pdffile1 = new PDFFile(buf1);
+	public static int numberOfPages(final String fileName) {
+		final File file1 = new File(fileName);
+		try (final RandomAccessFile raf1 = new RandomAccessFile(file1, "r");
+		     final FileChannel channel1 = raf1.getChannel()) {
+			final ByteBuffer buf1 = channel1.map(FileChannel.MapMode.READ_ONLY, 0, channel1.size());
+			final PDFFile pdffile1 = new PDFFile(buf1);
 			return pdffile1.getNumPages();
-		} catch (FileNotFoundException e) {
+		} catch (final FileNotFoundException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 		return 0;
