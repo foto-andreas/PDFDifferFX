@@ -1,0 +1,39 @@
+janel.main.class=de.schrell.pdftools.PdfDifferMain
+janel.min.java.version=1.8
+janel.classpath.jars.dir.recursive=${SELF_HOME}/build/libs
+janel.classpath.jars.dir.recursive=${SELF_HOME}/lib
+janel.classpath.jars.dir.recursive=${env.USER_DEFINED_JARS_FOLDER}
+-Dvisualvm.display.name=PDF-DifferFx
+-Djava.library.path=${SELF_HOME}
+
+-Xmx4096M
+
+janel.working.dir=${CALLER_DIR}
+
+janel.allow.jvm.options=true
+janel.jvm.bitness.mismatch=skip
+janel.java.home.path=${SELF_HOME}/jre64
+
+# Uncomment the following line if you want to change the directory of temporary files.
+# -Djava.io.tmpdir=C:/tmp/
+
+# Java options for analysis of OutOfMemoryErrors - do only uncomment them if needed
+# -XX:+HeapDumpOnOutOfMemoryError
+# -XX:HeapDumpPath=C:\Temp\POSY-Batch-HeapDump.hprof
+
+# Java options for performance analysis - do only uncomment them if needed
+# -agentlib:hprof=cpu=samples,depth=8,file=C:\Temp\POSY-Batch-Profile.hprof
+
+# Uncomment the following java options to activate remote JMX
+# Please ensure that you have a unique port number and put the IP-address or hostname of this @ServiceName@ in the last line
+# -Dcom.sun.management.jmxremote=true
+# -Dcom.sun.management.jmxremote.port=9090
+# -Dcom.sun.management.jmxremote.ssl=false
+# -Dcom.sun.management.jmxremote.authenticate=false 
+# -Djava.rmi.server.hostname="IP-address or hostname"
+
+# Uncomment the following java options to activate logging of the garbage collector (GC)
+# -Xloggc:C:\Temp\PDFDiffer-GC.txt"
+# -XX:+PrintGCDetails"
+# -XX:+PrintGCTimeStamps"
+# -XX:+PrintGCDateStamps"
