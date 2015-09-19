@@ -15,7 +15,6 @@
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/fontbox-2.0.0-20150919.115914-1736.jar"/>
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/jempbox-2.0.0-20140823.120514-532.jar"/>
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-2.0.0-20150919.120035-1683.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-lucene-2.0.0-20131008.170503-55.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-tools-2.0.0-20150919.120258-1522.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/xmpbox-2.0.0-20150919.115930-1722.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
