@@ -14,6 +14,8 @@ dependencies {
     compile group: 'org.apache.pdfbox', name: 'xmpbox', version: '2.0.0-20150919.115930-1722'
 }
 
+compileJava.options.encoding = 'UTF-8'
+
 sourceCompatibility = 8
 
 version = '1.0'
@@ -32,3 +34,18 @@ jar {
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA' 
 }
 
+task zip(type: Zip) {
+    from('build/libs/') {
+        into('lib')
+    }
+    from('lib/') {
+        into('lib') 
+    }
+    from('jre64/') {
+        into('jre64')
+    }
+    // from('PDFDifferFx.sh')
+    from('PDFDifferFx64.exe')
+    from('PDFDifferFx64.lap')
+    into('PDFDifferFx')
+}
