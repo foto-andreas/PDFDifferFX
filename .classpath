@@ -13,12 +13,10 @@
 			<attribute name="javadoc_location" value="file:/C:/Source/WorkspacePosy-Shipit-2015-2/PDFDifferFx/lib/commons-logging-1.2/apidocs/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/pdfbox/fontbox-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/jempbox-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/pdfbox-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/pdfbox-app-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/preflight-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/preflight-app-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox/xmpbox-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/fontbox-2.0.0-20150919.115914-1736.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/jempbox-2.0.0-20140823.120514-532.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-2.0.0-20150919.120035-1683.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-lucene-2.0.0-20131008.170503-55.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-tools-2.0.0-20150919.120258-1522.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
