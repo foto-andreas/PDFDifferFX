@@ -9,9 +9,8 @@ import javafx.scene.transform.Scale;
 
 public class ZoomableScrollPane extends ScrollPane{
 
-    Group zoomGroup;
-    Scale scaleTransform;
-    Node content;
+    private final Group zoomGroup;
+    private final Scale scaleTransform;
 
     private static final double MAX_SCALE = 8;
     private static final double MIN_SCALE = 0.1;
@@ -48,9 +47,7 @@ public class ZoomableScrollPane extends ScrollPane{
 
     public ZoomableScrollPane(final Node content, final double initZoom)
     {
-      this.content = content;
-//      this.zoomX = zoomX;
-//      this.zoomY = zoomY;
+      super(content);
       final Group contentGroup = new Group();
       this.zoomGroup = new Group();
       contentGroup.getChildren().add(this.zoomGroup);

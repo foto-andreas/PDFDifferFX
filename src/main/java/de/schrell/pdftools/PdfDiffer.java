@@ -1,7 +1,6 @@
 package de.schrell.pdftools;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
@@ -11,7 +10,6 @@ import de.schrell.fx.FxHelper;
 import de.schrell.fx.RadioButtonGroup;
 import de.schrell.fx.ZoomableScrollPane;
 import de.schrell.image.ImageDiffer;
-import de.schrell.tools.TempDir;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
@@ -52,8 +50,6 @@ public class PdfDiffer {
 
     private final ImageView image = new ImageView();
 
-    private volatile File tmpdir = null;
-
     private volatile int pageNo;
 
     private final Label infoLine = new Label("INFOZEILE");
@@ -73,14 +69,6 @@ public class PdfDiffer {
     public PdfDiffer(final String pdf1, final String pdf2) throws IOException {
         this.imagerForOldPdf = new PdfImager(pdf1);
         this.imagerForNewPdf = new PdfImager(pdf2);
-        try {
-            this.tmpdir = TempDir.createTempDir("pdfDiffer-");
-            this.tmpdir.mkdir();
-        } catch (final IOException e) {
-            LOGGER.error("Temporäres Verzeichnis konnte nicht erzeugt werden.", e);
-            FxHelper.createMessageDialog(AlertType.ERROR, "Verzeichnisproblem...", "Das temporäre Verzeichnis konnte nicht angelegt werden.", e).showAndWait();
-            System.exit(1);
-        }
         this.image.setSmooth(true);
         this.image.setPreserveRatio(true);
         this.image.setCache(true);
@@ -98,8 +86,26 @@ public class PdfDiffer {
      * this method calls the external tool and displays the image. Mainly to
      * have the exception handling bound here.
      */
-    private boolean display() {
-        return this.updateDisplayedImage(this.pageNo);
+    private synchronized boolean display() {
+
+        if (this.pageNo >= this.maxPage() || this.pageNo < 0 ) {
+            return false;
+        }
+
+        try {
+            final boolean hasRed = this.displayImage(this.pageNo);
+            return hasRed;
+        } catch (final Throwable e) {
+            LOGGER.error("Fehler beim Einlesen eines Seiten-Bildes", e);
+            FxHelper.createMessageDialog(
+                AlertType.ERROR,
+                "Einlesefehler",
+                "Fehler beim Einlesen eines Seiten-Bildes", e).showAndWait();
+            System.exit(1);
+        }
+
+        return false;
+
     }
 
     /**
@@ -131,40 +137,18 @@ public class PdfDiffer {
         final Task<Void> task = new Task<Void>() {
             @Override
             protected Void call() {
-                while(PdfDiffer.this.pageNo < PdfDiffer.this.maxPage() - 1) {
+                while(PdfDiffer.this.pageNo < PdfDiffer.this.maxPage()) {
                     PdfDiffer.this.pageNo++;
                     if (PdfDiffer.this.display()) {
                         break;
                     }
                 }
-                PdfDiffer.this.display();
                 return null;
             }
         };
         final Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
-    }
-
-    private boolean updateDisplayedImage(final int n) {
-
-        if (n >= this.maxPage() || n < 0 ) {
-            return false;
-        }
-
-        try {
-            final boolean hasRed = this.displayImage(n);
-            this.setProgress(this.pageNo);
-            return hasRed;
-        } catch (final Throwable e) {
-            LOGGER.error("Fehler beim Einlesen eines Seiten-Bildes", e);
-            FxHelper.createMessageDialog(
-                AlertType.ERROR,
-                "Einlesefehler",
-                "Fehler beim Einlesen eines Seiten-Bildes", e).showAndWait();
-            System.exit(1);
-        }
-        return false;
     }
 
     private boolean displayImage(final int n) throws IOException {
@@ -185,6 +169,7 @@ public class PdfDiffer {
 
         Platform.runLater(()
             -> {
+                this.setProgress();
                 this.infoLine.setText(String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(),
                     this.imagerForOldPdf.getNumberOfPages(), this.imagerForNewPdf.getNumberOfPages()));
             });
@@ -198,6 +183,7 @@ public class PdfDiffer {
         final ImageDiffer differ = new ImageDiffer(biOld, biNew);
         final Image imageDiff = SwingFXUtils.toFXImage(differ.getDiff(), null);
         this.image.setImage(imageDiff);
+        LOGGER.info("displayed image for page " + this.pageNo);
         if (differ.hasDiffs()) {
             LOGGER.info("ROT auf Seite: " + (n + 1));
         }
@@ -298,8 +284,8 @@ public class PdfDiffer {
         return buttons;
     }
 
-    void setProgress(final int value) {
-        Platform.runLater(() -> this.progress.setProgress((1d + value) / this.maxPage()));
+    void setProgress() {
+        this.progress.setProgress((1d + this.pageNo) / this.maxPage());
     }
 
     private void createQuitButton(final VBox buttons) {

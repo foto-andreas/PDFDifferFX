@@ -21,10 +21,10 @@ public class ImageDiffer {
                 final int cOld = biOld.getRGB(x,y);
                 final int cNew = biNew.getRGB(x,y);
                 if (cOld == cNew) {
-                    biDiff.setRGB(x,y,lighten(new Color(cOld), 0.6).getRGB());
+                    biDiff.setRGB(x, y, lighten(new Color(cOld), 0.5).getRGB());
                 } else {
                     this.hasDiffs = true;
-                    biDiff.setRGB(x,y,red);
+                    biDiff.setRGB(x, y, red);
                 }
             }
         }

@@ -18,6 +18,7 @@ public class PdfDifferMain extends Application {
     private PdfDiffer pdfDiffer = null;
 
     public PdfDifferMain() {
+        Thread.currentThread().setName("PDFDiffer-Main");
     }
 
     @Override
@@ -55,6 +56,5 @@ public class PdfDifferMain extends Application {
     public static void main(final String[] args) {
         launch(args);
     }
-
 
 }

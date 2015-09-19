@@ -1,4 +1,4 @@
-bin
+/bin
 /build/
 .gradle/2.7-rc-2/
 /Download/

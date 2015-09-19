@@ -1,12 +1,15 @@
 package de.schrell.pdftools;
 
 /**
- * How to display the files
+ * How to display files
  */
+@SuppressWarnings("nls")
 enum DisplayType {
 
     DIFF("DIFF"),
+
     OLD("ALT"),
+
     NEW("NEU");
 
     String text;
