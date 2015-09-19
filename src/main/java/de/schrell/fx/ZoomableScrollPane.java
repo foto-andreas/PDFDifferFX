@@ -1,6 +1,5 @@
 package de.schrell.fx;
 
-import javafx.beans.property.DoubleProperty;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -13,8 +12,6 @@ public class ZoomableScrollPane extends ScrollPane{
     Group zoomGroup;
     Scale scaleTransform;
     Node content;
-    final DoubleProperty zoomX;
-    final DoubleProperty zoomY;
 
     private static final double MAX_SCALE = 8;
     private static final double MIN_SCALE = 0.1;
@@ -49,19 +46,17 @@ public class ZoomableScrollPane extends ScrollPane{
         }
     }
 
-    public ZoomableScrollPane(final Node content, final DoubleProperty zoomX, final DoubleProperty zoomY)
+    public ZoomableScrollPane(final Node content, final double initZoom)
     {
       this.content = content;
-      this.zoomX = zoomX;
-      this.zoomY = zoomY;
+//      this.zoomX = zoomX;
+//      this.zoomY = zoomY;
       final Group contentGroup = new Group();
       this.zoomGroup = new Group();
       contentGroup.getChildren().add(this.zoomGroup);
       this.zoomGroup.getChildren().add(content);
       this.setContent(contentGroup);
-      this.scaleTransform = new Scale();
-      this.scaleTransform.xProperty().bindBidirectional(this.zoomX);
-      this.scaleTransform.yProperty().bindBidirectional(this.zoomY);
+      this.scaleTransform = new Scale(initZoom, initZoom);
       this.scaleTransform.setZ(0);
       this.scaleTransform.setPivotX(0);
       this.scaleTransform.setPivotY(0);

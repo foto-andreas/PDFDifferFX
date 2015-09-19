@@ -13,8 +13,6 @@ import de.schrell.fx.ZoomableScrollPane;
 import de.schrell.image.ImageDiffer;
 import de.schrell.tools.TempDir;
 import javafx.application.Platform;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.HPos;
@@ -48,62 +46,21 @@ import javafx.stage.Stage;
 @SuppressWarnings("nls")
 public class PdfDiffer {
 
-    /**
-     * Logger for this class
-     */
+    private static final double INIT_ZOOM = 0.5;
+
     private final static Logger LOGGER = LogManager.getLogger(PdfDiffer.class);
 
-    /**
-     * How to display the files
-     */
-    enum DisplayType {
-
-        DIFF("DIFF"),
-        OLD("ALT"),
-        NEW("NEU");
-
-        String text;
-
-        DisplayType(final String text) {
-            this.text = text;
-        }
-
-        @Override
-        public String toString() {
-            return this.text;
-        }
-    }
-
-    /**
-     * Bild-Ansicht.
-     */
     private final ImageView image = new ImageView();
 
-    /**
-     * Temporary directory to store image files
-     */
     private volatile File tmpdir = null;
 
-    /**
-     * The actual page number
-     */
     private volatile int pageNo;
 
-    /**
-     * infoline at the top
-     */
-    private final Label info = new Label("INFOZEILE");
+    private final Label infoLine = new Label("INFOZEILE");
 
-    /**
-     * Fortschrittsbalken.
-     */
-    private volatile ProgressIndicator progress;
+    private ProgressIndicator progress;
 
-    private volatile RadioButtonGroup<DisplayType> radioButtonGroup;
-
-    private static final double INIT_ZOOM = 0.5;
-    private volatile static DoubleProperty factorX = new SimpleDoubleProperty(INIT_ZOOM);
-    private volatile static DoubleProperty factorY = new SimpleDoubleProperty(INIT_ZOOM);
+    private RadioButtonGroup<DisplayType> radioButtonGroup;
 
     private volatile ScrollPane scrollPane;
 
@@ -211,37 +168,52 @@ public class PdfDiffer {
     }
 
     private boolean displayImage(final int n) throws IOException {
-        final BufferedImage biOld = this.imagerForOldPdf.convertToImage(n);
-        final BufferedImage biNew = this.imagerForNewPdf.convertToImage(n);
-        final Image imageOld = SwingFXUtils.toFXImage(biOld, null);
-        final Image imageNew = SwingFXUtils.toFXImage(biNew, null);
-        final ImageDiffer differ = new ImageDiffer(biOld, biNew);
 
-        final Image imageDiff = SwingFXUtils.toFXImage(differ.getDiff(), null);
-
-        if (differ.hasDiffs()) {
-            LOGGER.info("ROT auf Seite: " + (n + 1));
-        }
+        boolean hasDiffs = false;
 
         switch (this.radioButtonGroup.getValue()) {
         case OLD:
-            this.image.setImage(imageOld);
+            this.displayOldImage(n);
             break;
         case NEW:
-            this.image.setImage(imageNew);
+            this.displayNewImage(n);
             break;
         case DIFF:
-            this.image.setImage(imageDiff);
+            hasDiffs = this.displayDiffImage(n);
             break;
         }
-        LOGGER.debug("image updated.");
 
         Platform.runLater(()
             -> {
-                this.info.setText(String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(),
+                this.infoLine.setText(String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(),
                     this.imagerForOldPdf.getNumberOfPages(), this.imagerForNewPdf.getNumberOfPages()));
             });
+
+        return hasDiffs;
+    }
+
+    private boolean displayDiffImage(final int n) throws IOException {
+        final BufferedImage biOld = this.imagerForOldPdf.convertToImage(n);
+        final BufferedImage biNew = this.imagerForNewPdf.convertToImage(n);
+        final ImageDiffer differ = new ImageDiffer(biOld, biNew);
+        final Image imageDiff = SwingFXUtils.toFXImage(differ.getDiff(), null);
+        this.image.setImage(imageDiff);
+        if (differ.hasDiffs()) {
+            LOGGER.info("ROT auf Seite: " + (n + 1));
+        }
         return differ.hasDiffs();
+    }
+
+    private void displayNewImage(final int n) throws IOException {
+        final BufferedImage biNew = this.imagerForNewPdf.convertToImage(n);
+        final Image imageNew = SwingFXUtils.toFXImage(biNew, null);
+        this.image.setImage(imageNew);
+    }
+
+    private void displayOldImage(final int n) throws IOException {
+        final BufferedImage biOld = this.imagerForOldPdf.convertToImage(n);
+        final Image imageOld = SwingFXUtils.toFXImage(biOld, null);
+        this.image.setImage(imageOld);
     }
 
     /**
@@ -272,14 +244,14 @@ public class PdfDiffer {
         final Pane buttons = this.createButtons();
         root.add(buttons, 1, 1);
 
-        this.scrollPane = new ZoomableScrollPane(this.image, factorX, factorY);
+        this.scrollPane = new ZoomableScrollPane(this.image, INIT_ZOOM);
         this.scrollPane.setManaged(true);
         this.scrollPane.setVbarPolicy(ScrollBarPolicy.ALWAYS);
         this.scrollPane.setHbarPolicy(ScrollBarPolicy.ALWAYS);
         this.scrollPane.setPannable(true);
         root.add(this.scrollPane, 0, 1);
 
-        root.add(this.info, 0, 0);
+        root.add(this.infoLine, 0, 0);
         root.setManaged(true);
 
         this.registerKeys(root);
@@ -327,7 +299,7 @@ public class PdfDiffer {
     }
 
     void setProgress(final int value) {
-        Platform.runLater(() -> this.progress.setProgress(Math.round((double)value / this.maxPage())));
+        Platform.runLater(() -> this.progress.setProgress((1d + value) / this.maxPage()));
     }
 
     private void createQuitButton(final VBox buttons) {
