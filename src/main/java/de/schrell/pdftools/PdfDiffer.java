@@ -10,16 +10,11 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.FieldPosition;
-import java.text.Format;
-import java.text.ParsePosition;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.imageio.ImageIO;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -27,12 +22,14 @@ import org.apache.logging.log4j.Logger;
 
 import de.schrell.fx.FxHelper;
 import de.schrell.fx.RadioButtonGroup;
+import de.schrell.fx.ZoomableScrollPane;
 import de.schrell.tools.TempDir;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.HPos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -41,14 +38,18 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
+import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.VBox;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
@@ -94,7 +95,7 @@ public class PdfDiffer {
     /**
      * Temporary directory to store image files
      */
-    private File tmpdir = null;
+    private volatile File tmpdir = null;
 
     /**
      * the old pdf file
@@ -109,7 +110,7 @@ public class PdfDiffer {
     /**
      * The actual page number
      */
-    private int pageNo;
+    private volatile int pageNo;
 
     /**
      * the number of pages in the first file(s)
@@ -149,7 +150,7 @@ public class PdfDiffer {
     /**
      * Fortschrittsbalken.
      */
-    private ProgressIndicator progress;
+    private volatile ProgressIndicator progress;
 
     /**
      * Schnelles Berechnen der Seiten um die aktuelle herum.
@@ -166,21 +167,32 @@ public class PdfDiffer {
      * Vorausberechnung aller Seiten mit halber Kraft.
      */
     ExecutorService miniExer = Executors.newFixedThreadPool(
-        Math.max(1, Runtime.getRuntime().availableProcessors() / 2),
+        Math.max(1, Runtime.getRuntime().availableProcessors() - 2),
         r -> {
             final Thread t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
             return t;
         });
 
-    private RadioButtonGroup<DisplayType> radioButtonGroup;
+    private volatile RadioButtonGroup<DisplayType> radioButtonGroup;
 
-    private static DoubleProperty factor = new SimpleDoubleProperty(1.0);
+    private static final double INIT_ZOOM = 0.5;
+    private volatile static DoubleProperty factorX = new SimpleDoubleProperty(INIT_ZOOM);
+    private volatile static DoubleProperty factorY = new SimpleDoubleProperty(INIT_ZOOM);
+
+    private volatile ScrollPane scrollPane;
+
+    private final Spinner<Double> spinner = new Spinner<>(0.1, 2.0, INIT_ZOOM, 0.05);
+
+    private final PdfImager imager1;
+    private final PdfImager imager2;
 
     /**
      * Konstruktor.
      */
-    public PdfDiffer(final String pdf1, final String pdf2) {
+    public PdfDiffer(final String pdf1, final String pdf2) throws IOException {
+        this.imager1 = new PdfImager(pdf1);
+        this.imager2 = new PdfImager(pdf2);
         this.pdf1 = pdf1;
         this.pdf2 = pdf2;
         this.maxPages1 = PdfProperties.numberOfPages(this.pdf1);
@@ -265,7 +277,6 @@ public class PdfDiffer {
         t.start();
     }
 
-
     /**
      * Generate the temp file names fo the picture files, generate rthe external
      * commands and start them.
@@ -287,39 +298,37 @@ public class PdfDiffer {
         String nameOld;
         String nameNew;
         String nameDiff;
-        final String geometry = calcGeometry();
+        //final String geometry = calcGeometry();
         nameOld = String.format("OLD%08d.png", n);
         cmdOld = new String[] { imBin + "convert",
-                "-density", "300",
+                "-density", "150",
                 "-quality", "100",
-                "-geometry", geometry,
+                //"-geometry", geometry,
                 String.format("%s[%d]", this.pdf1, n),
                 "-channel", "rgba",
                 "-alpha", "background",
                 path + "tmp" + nameOld };
-        logCommand(cmdOld);
         nameNew = String.format("NEW%08d.png", n);
         cmdNew = new String[] { imBin + "convert",
-                "-density", "300",
+                "-density", "150",
                 "-quality", "100",
-                "-geometry", geometry,
+                //"-geometry", geometry,
                 String.format("%s[%d]", this.pdf2, n),
                 "-channel", "rgba",
                 "-alpha", "background",
                 path + "tmp" + nameNew };
-        logCommand(cmdNew);
         nameDiff = String.format("DIF%08d.png", n);
         cmdDiff = new String[] { imBin + "compare",
-                "-density", "80",
+                "-density", "150",
                 "-quality", "100",
-                "-size", geometry,
+                //"-size", geometry,
+                "-colorspace", "gray",
                 "-compose", "src",
                 String.format("%s[%d]", this.pdf1, n),
                 String.format("%s[%d]", this.pdf2, n),
                 "-compose", "blend",
                 String.format("%s[%d]", this.pdf1, n),
                 path + "tmp" + nameDiff };
-        logCommand(cmdDiff);
         switch (this.radioButtonGroup.getValue()) {
         case OLD:
             createFile(n, cmdOld, path, nameOld);
@@ -332,55 +341,72 @@ public class PdfDiffer {
             break;
         default:
         }
-        boolean hasRed = false;
         if (!backGround) {
-            BufferedImage bi;
-            try {
-                String fileName;
-                switch (this.radioButtonGroup.getValue()) {
-                case OLD:
-                    fileName = path + geometry + nameOld;
-                    break;
-                case NEW:
-                    fileName = path + geometry + nameNew;
-                    break;
-                case DIFF:
-                    fileName = path + geometry + nameDiff;
-                    break;
-                default:
-                    fileName = "???";
-                }
-                bi = ImageIO.read(new File(fileName));
-                LOGGER.debug("SIZE BufferedImage: " + bi.getWidth() + "x" + bi.getHeight());
-                final Image image = SwingFXUtils.toFXImage(bi, null);
-                LOGGER.debug("SIZE Image: " + image.getWidth() + "x" + image.getHeight());
-                //                Platform.runLater(() ->
-                this.image.setImage(image);
-                //                );
-                if (hasRed(bi)) {
-                    hasRed = true;
-                    LOGGER.info("ROT auf Seite: " + (n + 1));
-                }
-                LOGGER.debug("image updated.");
-                Platform.runLater(() -> this.info.setText(
-                    String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(), this.maxPages1, this.maxPages2)));
-            } catch (final IOException e) {
-                LOGGER.error("Fehler beim Einlesen eines Seiten-Bildes", e);
-                FxHelper.createMessageDialog(
-                    AlertType.ERROR,
-                    "Einlesefehler",
-                    "Fehler beim Einlesen eines Seiten-Bildes", e).showAndWait();
-                System.exit(1);
-            }
-            this.setProgress(this.pageNo);
+            return this.updateDisplayedImage(n, path, nameOld, nameNew, nameDiff);
         }
+        return false;
+    }
+
+    private boolean updateDisplayedImage(final int n, final String path, final String nameOld, final String nameNew, final String nameDiff) {
+        try {
+            String fileName;
+            switch (this.radioButtonGroup.getValue()) {
+            case OLD:
+                fileName = path + nameOld;
+                break;
+            case NEW:
+                fileName = path + nameNew;
+                break;
+            case DIFF:
+                fileName = path + nameDiff;
+                break;
+            default:
+                fileName = "???";
+            }
+            final boolean hasRed = this.displayImage(n, fileName);
+            this.setProgress(this.pageNo);
+            return hasRed;
+        } catch (final Throwable e) {
+            LOGGER.error("Fehler beim Einlesen eines Seiten-Bildes", e);
+            FxHelper.createMessageDialog(
+                AlertType.ERROR,
+                "Einlesefehler",
+                "Fehler beim Einlesen eines Seiten-Bildes", e).showAndWait();
+            System.exit(1);
+        }
+        return false;
+    }
+
+    private boolean displayImage(final int n, final String fileName) throws IOException {
+        final BufferedImage bi = this.imager1.convertToImage(n);
+        boolean hasRed = false;
+        //TEST bi = ImageIO.read(new File(fileName));
+//        final double scaleX = (double)calcImageWidth() / bi.getWidth();
+//        final double scaleY = (double)calcImageHeight() / bi.getHeight();
+//        factorX.set(Math.min(scaleX, scaleY));
+//        factorY.set(Math.min(scaleX, scaleY));
+
+//        spinner.valueFactoryProperty().getValue().setValue(0.3);
+
+//        LOGGER.debug("SIZE BufferedImage: " + bi.getWidth() + "x" + bi.getHeight() + " scaled " + scaleX);
+        final Image image = SwingFXUtils.toFXImage(bi, null);
+        this.image.setImage(image);
+        //                );
+        if (hasRed(bi)) {
+            hasRed = true;
+            LOGGER.info("ROT auf Seite: " + (n + 1));
+        }
+        LOGGER.debug("image updated.");
+        //Platform.runLater(() -> this.info.setText(
+        String.format("Seite %d/%d [%d,%d]", n + 1, this.maxPage(), this.maxPages1, this.maxPages2);
+        //        ));
         return hasRed;
     }
 
-    private static String calcGeometry() {
-        final String geometry = calcImageWidth() + "x" + calcImageHeight();
-        return geometry;
-    }
+//    private static String calcGeometry() {
+//        final String geometry = calcImageWidth() + "x" + calcImageHeight();
+//        return geometry;
+//    }
 
     private static int createFile(final int n, final String[] cmd, final String path, final String name) {
         if (!new File(path + name).exists() && !workin.contains(n)) {
@@ -403,44 +429,50 @@ public class PdfDiffer {
     }
 
     private static int createPage(final int n, final String[] cmd, final String path, final String name) {
+        logCommand(cmd);
         workin.add(n);
         try {
-            final Process proc = Runtime.getRuntime().exec(cmd);
-            final int rc = proc.waitFor();
-            if (rc == 2) {
-                String stdout = "\n";
-                String stderr = "\n";
-                try (final InputStream errors = proc.getErrorStream()) {
-                    stderr = logStream(errors, Level.ERROR);
-                }
-                try (final InputStream output = proc.getInputStream()) {
-                    stdout = logStream(output, Level.INFO);
-                }
-                LOGGER.error("Fehler beim Aufruf von ImageMagick-Compare");
-                FxHelper.createMessageDialog(
-                    AlertType.ERROR,
-                    "Einlesefehler",
-                    "Fehler beim Aufruf von ImageMagick-Compare" +
-                    ":\nSTDOUT:\n" + stdout + "STDERR:\n" + stderr).showAndWait();
-                System.exit(1);
 
-            }
+            //final Process proc = Runtime.getRuntime().exec(cmd);
+            final int rc = 0; //proc.waitFor();
+
+//            if (rc == 2) {
+//                String stdout = "\n";
+//                String stderr = "\n";
+//                try (final InputStream errors = proc.getErrorStream()) {
+//                    stderr = logStream(errors, Level.ERROR);
+//                }
+//                try (final InputStream output = proc.getInputStream()) {
+//                    stdout = logStream(output, Level.INFO);
+//                }
+//                LOGGER.error("Fehler beim Aufruf von ImageMagick-Compare");
+//                FxHelper.createMessageDialog(
+//                    AlertType.ERROR,
+//                    "Einlesefehler",
+//                    "Fehler beim Aufruf von ImageMagick-Compare" +
+//                    ":\nSTDOUT:\n" + stdout + "STDERR:\n" + stderr).showAndWait();
+//                System.exit(1);
+//
+//            }
             retCodes.put(name, rc);
-            Files.move(Paths.get(path + "tmp" + name), Paths.get(path + calcGeometry() + name), StandardCopyOption.ATOMIC_MOVE);
+            Files.move(Paths.get(path + "tmp" + name), Paths.get(path + name), StandardCopyOption.ATOMIC_MOVE);
             LOGGER.debug("renamed file: " + path + "tmp" + name + " -> " + path + name);
             workin.remove(n);
             LOGGER.debug("workin on " + workin.size() + " items.");
             LOGGER.debug("done. File=" + path + name);
             return rc;
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
+//        } catch (final InterruptedException e) {
+//            Thread.currentThread().interrupt();
         } catch (final IOException e) {
             LOGGER.error("Fehler beim Umwandeln oder Vergleichen einer Seite", e);
-            FxHelper.createMessageDialog(
-                AlertType.ERROR,
-                "Fehler beim Umwandeln",
-                "Fehler beim Umwandeln oder Vergleichen einer Seite", e).showAndWait();
-            System.exit(1);
+//            Platform.runLater(()
+//                    -> {
+//                        FxHelper.createMessageDialog(
+//                            AlertType.ERROR,
+//                            "Fehler beim Umwandeln",
+//                            "Fehler beim Umwandeln oder Vergleichen einer Seite", e).showAndWait();
+//                        System.exit(1);
+//                    });
         }
         return 2; // error or interrupt
     }
@@ -489,6 +521,21 @@ public class PdfDiffer {
      */
     public void setup(final GridPane root) {
 
+        final ColumnConstraints fillConstraintC = new ColumnConstraints();
+        fillConstraintC.setFillWidth(true);
+        fillConstraintC.setHgrow(Priority.ALWAYS);
+        final RowConstraints fillConstraintR = new RowConstraints();
+        fillConstraintR.setFillHeight(true);
+        fillConstraintR.setVgrow(Priority.ALWAYS);
+        final ColumnConstraints staticConstraint = new ColumnConstraints(200);
+        staticConstraint.setHalignment(HPos.RIGHT);
+        staticConstraint.setHgrow(Priority.NEVER);
+        final RowConstraints staticConstraintR = new RowConstraints();
+        staticConstraintR.setFillHeight(false);
+        staticConstraintR.setVgrow(Priority.NEVER);
+        root.getColumnConstraints().addAll(fillConstraintC, staticConstraint);
+        root.getRowConstraints().addAll(staticConstraintR, fillConstraintR);
+
         String home = System.getenv("DIFFER_HOME");
         if (home == null) {
             home = ".";
@@ -497,14 +544,21 @@ public class PdfDiffer {
         final Pane buttons = this.createButtons();
         root.add(buttons, 1, 1);
 
-        final ScrollPane scrollPane = new ScrollPane(this.image);
-        root.add(scrollPane, 0, 1);
+        this.scrollPane = new ZoomableScrollPane(this.image, factorX, factorY);
+        this.scrollPane.setManaged(true);
+        this.scrollPane.setVbarPolicy(ScrollBarPolicy.ALWAYS);
+        this.scrollPane.setHbarPolicy(ScrollBarPolicy.ALWAYS);
+        this.scrollPane.setPannable(true);
+        root.add(this.scrollPane, 0, 1);
 
         root.add(this.info, 0, 0);
+        root.setManaged(true);
 
-        for (int i = 0; i < this.maxPage(); i++) {
-            final int pre = i;
-            this.miniExer.execute(() -> this.doubledImage(pre, true));
+        if (PREFETCH > 0) {
+            for (int i = 0; i < this.maxPage(); i++) {
+                final int pre = i;
+                this.miniExer.execute(() -> this.doubledImage(pre, true));
+            }
         }
 
         this.registerKeys(root);
@@ -548,20 +602,12 @@ public class PdfDiffer {
         this.createRadioButtons(buttons);
         this.createProgressBar(buttons);
         this.createQuitButton(buttons);
-        this.createFactor(buttons);
+//        this.createZoomSpinner(buttons);
         return buttons;
     }
 
     void setProgress(final int value) {
         Platform.runLater(() -> this.progress.setProgress((double)value / this.maxPage()));
-    }
-
-    private static int calcImageWidth() {
-        return (int) ((Screen.getPrimary().getVisualBounds().getWidth() - 200 - 120) * factor.get());
-    }
-
-    private static int calcImageHeight() {
-        return (int) ((Screen.getPrimary().getVisualBounds().getHeight() - 120) * factor.get());
     }
 
     private void createQuitButton(final VBox buttons) {
@@ -618,21 +664,14 @@ public class PdfDiffer {
         });
     }
 
-    private void createFactor(final VBox buttons) {
-        final TextField text = new TextField("1");
-        text.textProperty().bindBidirectional(factor, new Format(){
-            private static final long serialVersionUID = 8921786586608917220L;
-            @Override
-            public StringBuffer format(final Object obj, final StringBuffer toAppendTo, final FieldPosition pos) {
-                return toAppendTo.append(obj);
-            }
-            @Override
-            public Object parseObject(final String source, final ParsePosition pos) {
-                return Double.parseDouble(source);
-            }});
-        text.textProperty().addListener((observable, oldValue, newValue)
-                -> {this.display(); this.image.getScene().getWindow().sizeToScene();});
-        buttons.getChildren().add(text);
+    private void createZoomSpinner(final VBox buttons) {
+        this.spinner.setPrefWidth(Double.MAX_VALUE);
+        this.spinner.valueProperty().addListener((observable, oldvalue, scale)
+            -> {
+                factorX.set(scale);
+                factorY.set(scale);
+            });
+        buttons.getChildren().add(this.spinner);
     }
 
     private void createPageNumberField(final Pane buttons) {

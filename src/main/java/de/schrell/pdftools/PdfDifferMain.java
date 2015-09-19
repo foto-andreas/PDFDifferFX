@@ -49,7 +49,6 @@ public class PdfDifferMain extends Application {
 
         primaryStage.setTitle("PDF-Differ FX");
         primaryStage.setScene(scene);
-        primaryStage.sizeToScene();
         primaryStage.show();
     }
 

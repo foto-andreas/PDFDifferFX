@@ -12,7 +12,7 @@ janel.working.dir=${CALLER_DIR}
 
 janel.allow.jvm.options=true
 janel.jvm.bitness.mismatch=skip
-janel.java.home.path=${SELF_HOME}/jre64
+janel.java.home.path=${SELF_HOME}/jdk64
 
 # Uncomment the following line if you want to change the directory of temporary files.
 # -Djava.io.tmpdir=C:/tmp/

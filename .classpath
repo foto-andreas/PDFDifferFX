@@ -8,5 +8,17 @@
 	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-api-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-core-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/pdf-renderer-1.0.5/pdf-renderer-1.0.5.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.2/commons-logging-1.2.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/C:/Source/WorkspacePosy-Shipit-2015-2/PDFDifferFx/lib/commons-logging-1.2/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/pdfbox/fontbox-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/jempbox-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/pdfbox-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/pdfbox-app-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/preflight-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/preflight-app-1.8.10.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox/xmpbox-1.8.10.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
