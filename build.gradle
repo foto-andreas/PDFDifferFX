@@ -44,7 +44,7 @@ task zip(type: Zip) {
     from('jre64/') {
         into('jre64')
     }
-    // from('PDFDifferFx.sh')
+    from('PDFDifferFx.sh')
     from('PDFDifferFx64.exe')
     from('PDFDifferFx64.lap')
     into('PDFDifferFx')

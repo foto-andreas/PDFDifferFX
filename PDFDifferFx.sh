@@ -41,13 +41,13 @@ fi
 #
 # Uncomment the following if the Oracle JVM is installed:
 # JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
-# JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=/tmp/POSY-Batch-HeapDump.hprof"
+# JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=/tmp/PDFDifferFx-HeapDump.hprof"
 #
 # Uncomment the following if the IBM JVM is installed:
-# JAVA_OPTS="$JAVA_OPTS -Xdump:heap:events=systhrow,filter=java/lang/OutOfMemoryError,opts=CLASSIC,file=/tmp/POSY-Batch-HeapDump.hprof"
+# JAVA_OPTS="$JAVA_OPTS -Xdump:heap:events=systhrow,filter=java/lang/OutOfMemoryError,opts=CLASSIC,file=/tmp/PDFDifferFx-HeapDump.hprof"
 
 # Java options for performance analysis - do only uncomment them if needed!
-# JAVA_OPTS="$JAVA_OPTS -agentlib:hprof=cpu=samples,depth=8,file=/tmp/POSY-Batch-Profile.hprof"
+# JAVA_OPTS="$JAVA_OPTS -agentlib:hprof=cpu=samples,depth=8,file=/tmp/PDFDiferFx-Profile.hprof"
 
 # Uncomment the following java options to activate remote JMX
 # Please ensure that you have a unique port number and put the IP-address or hostname of this @ServiceName@ in the last line
@@ -87,5 +87,5 @@ done
 
 export LD_LIBRARY_PATH=$EXECUTABLEPATH:$LD_LIBRARY_PATH
 export CLASSPATH
-java $JAVA_OPTS de.setsoftware.posy.main.POSYBatch $ARGUMENTS
+java $JAVA_OPTS de.schrell.pdftools.PdfDifferMain $ARGUMENTS
 exit $?
