@@ -1,5 +1,10 @@
 package de.schrell.pdftools;
 
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.jar.Manifest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,6 +41,7 @@ public class PdfDifferMain extends Application {
             System.exit(1);
         }
 
+        final String version = getVersion();
         final String firstFile = this.getParameters().getRaw().get(0);
         final String secondFile = this.getParameters().getRaw().get(1);
         this.pdfDiffer = new PdfDiffer(firstFile, secondFile);
@@ -48,9 +54,25 @@ public class PdfDifferMain extends Application {
 
         this.pdfDiffer.setup(gridPane);
 
-        primaryStage.setTitle("PDF-Differ FX");
+        primaryStage.setTitle("PDF-Differ FX v" + version);
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private static String getVersion() {
+        String version = null;
+        try {
+            @SuppressWarnings("resource")
+            final URLClassLoader cl = (URLClassLoader) PdfDifferMain.class.getClassLoader();
+                final URL url = cl.findResource("META-INF/MANIFEST.MF");
+                try (InputStream stream = url.openStream()) {
+                    final Manifest manifest = new Manifest(stream);
+                    version = manifest.getMainAttributes().getValue("Implementation-Version");
+                }
+        } catch (final Exception e) {
+            //nix
+        }
+        return (version == null) ? "0.0" : version;
     }
 
     public static void main(final String[] args) {

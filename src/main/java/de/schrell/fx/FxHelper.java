@@ -9,7 +9,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 
-public class FxHelper {
+public class FxHelper { 
 
 
     public static Alert createMessageDialog(final AlertType type, final String header, final String text) {

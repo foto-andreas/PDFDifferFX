@@ -4,7 +4,6 @@
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="src" path="src/test/resources"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk64"/>
 	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-api-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-2.3/log4j-core-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.2/commons-logging-1.2.jar">
@@ -16,5 +15,10 @@
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/jempbox-2.0.0-20140823.120514-532.jar"/>
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-2.0.0-20150919.120035-1683.jar"/>
 	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/xmpbox-2.0.0-20150919.115930-1722.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre64">
+		<attributes>
+			<attribute name="owner.project.facets" value="java"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

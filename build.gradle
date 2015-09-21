@@ -18,20 +18,14 @@ compileJava.options.encoding = 'UTF-8'
 
 sourceCompatibility = 8
 
-version = '1.0'
+version = '1.1'
 
 jar {
     manifest {
-        attributes 'Implementation-Title': 'PDF-Differ',
+        attributes 'Implementation-Title': 'PDF-Differ FX',
                    'Implementation-Version': version,
                    'Main-Class': 'de.schrell.pdftools.PdfDifferMain'
     }
-    doFirst {
-	from {
-       	    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-        }
-    }
-    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA' 
 }
 
 task zip(type: Zip) {
@@ -49,3 +43,5 @@ task zip(type: Zip) {
     from('PDFDifferFx64.lap')
     into('PDFDifferFx')
 }
+
+zip.dependsOn jar
