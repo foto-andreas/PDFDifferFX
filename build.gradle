@@ -8,17 +8,16 @@ dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.3'
     compile group: 'org.apache.commons.logging', name: 'commons-logging', version: '1.2'
-    compile group: 'org.apache.pdfbox', name: 'fontbox', version: '2.0.0-20150919.115914-1736'
-    compile group: 'org.apache.pdfbox', name: 'jempbox', version: '2.0.0-20140823.120514-532'
-    compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.0-20150919.120035-1683'
-    compile group: 'org.apache.pdfbox', name: 'xmpbox', version: '2.0.0-20150919.115930-1722'
+    compile group: 'org.apache.pdfbox', name: 'fontbox', version: '2.0.6'
+    compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.6'
+    compile group: 'org.apache.pdfbox', name: 'xmpbox', version: '2.0.6'
 }
 
 compileJava.options.encoding = 'UTF-8'
 
 sourceCompatibility = 8
 
-version = '1.1'
+version = '1.2'
 
 jar {
     manifest {
@@ -33,9 +32,9 @@ task zip(type: Zip) {
         into('lib')
     }
     from('lib/') {
-        into('lib') 
+        into('lib')
     }
-    from('jre64/') {
+    from('C:/Program Files/Java/jdk1.8.0_101/jre') {
         into('jre64')
     }
     from('PDFDifferFx.sh')

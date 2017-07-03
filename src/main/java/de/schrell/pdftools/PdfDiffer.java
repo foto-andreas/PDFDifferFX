@@ -11,6 +11,7 @@ import de.schrell.fx.RadioButtonGroup;
 import de.schrell.fx.ZoomableScrollPane;
 import de.schrell.image.ImageDiffer;
 import javafx.application.Platform;
+import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.HPos;
@@ -62,6 +63,8 @@ public class PdfDiffer {
 
     private final PdfImager imagerForOldPdf;
     private final PdfImager imagerForNewPdf;
+
+    private final FirstLineService service = new FirstLineService(this);
 
     /**
      * Konstruktor.
@@ -125,6 +128,32 @@ public class PdfDiffer {
 
     }
 
+    public static class FirstLineService extends Service<Void> {
+
+        private final PdfDiffer differ;
+
+        public FirstLineService(final PdfDiffer differ) {
+            this.differ = differ;
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<Void>() {
+                @Override
+                protected Void call() {
+                    while(FirstLineService.this.differ.pageNo < FirstLineService.this.differ.maxPage()) {
+                        FirstLineService.this.differ.pageNo++;
+                        if (FirstLineService.this.differ.display()) {
+                            break;
+                        }
+                    }
+                    return null;
+                }
+            };
+        }
+
+    }
+
     private void searchNextDifference() {
         if (this.radioButtonGroup.getValue() != DisplayType.DIFF) {
             final Alert alert = FxHelper.createMessageDialog(
@@ -134,21 +163,9 @@ public class PdfDiffer {
             alert.showAndWait();
             this.setDisplayType(DisplayType.DIFF);
         }
-        final Task<Void> task = new Task<Void>() {
-            @Override
-            protected Void call() {
-                while(PdfDiffer.this.pageNo < PdfDiffer.this.maxPage()) {
-                    PdfDiffer.this.pageNo++;
-                    if (PdfDiffer.this.display()) {
-                        break;
-                    }
-                }
-                return null;
-            }
-        };
-        final Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
+        if (!this.service.isRunning()) {
+            this.service.start();
+        }
     }
 
     private boolean displayImage(final int n) throws IOException {

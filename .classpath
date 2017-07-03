@@ -11,11 +11,13 @@
 			<attribute name="javadoc_location" value="file:/C:/Source/WorkspacePosy-Shipit-2015-2/PDFDifferFx/lib/commons-logging-1.2/apidocs/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/fontbox-2.0.0-20150919.115914-1736.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/jempbox-2.0.0-20140823.120514-532.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/pdfbox-2.0.0-20150919.120035-1683.jar"/>
-	<classpathentry kind="lib" path="lib/pdfbox-2.0.0/xmpbox-2.0.0-20150919.115930-1722.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre64">
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/fontbox-2.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/pdfbox-2.0.6.jar" sourcepath="lib/pdfbox-2.0.6/pdfbox-2.0.6-src.zip"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/pdfbox-debugger-2.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/pdfbox-tools-2.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/preflight-2.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/pdfbox-2.0.6/xmpbox-2.0.6.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_101">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
