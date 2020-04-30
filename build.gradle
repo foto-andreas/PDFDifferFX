@@ -1,8 +1,20 @@
-apply plugin: 'java'
+plugins {
+  id 'org.openjfx.javafxplugin' version '0.0.8'
+  id 'application' 
+}
+
+javafx {
+    version = "11.0.2"
+    modules = [ 'javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing' ]
+}
 
 repositories {
+    mavenCentral()
     flatDir(name:'lib').dirs(rootProject.file('lib').listFiles())
 }
+
+//repositories {
+//}
 
 dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
@@ -16,8 +28,11 @@ dependencies {
 compileJava.options.encoding = 'UTF-8'
 
 sourceCompatibility = 8
+targetCompatibility = 8
 
 version = '1.2'
+
+mainClassName = 'de.schrell.pdftools.PdfDifferMain'
 
 jar {
     manifest {
