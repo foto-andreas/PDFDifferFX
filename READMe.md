@@ -1,2 +1,2 @@
-Status: [![Build Status](https://travis-ci.org/github/foto-andreas/PDFDifferFX.png?branch=master)](https://travis-ci.org/github/foto-andreas/PDFDifferFX)
-
+Status: 
+[![Build Status](https://travis-ci.org/foto-andreas/PDFDifferFX.svg?branch=master)](https://travis-ci.org/foto-andreas/PDFDifferFX)
