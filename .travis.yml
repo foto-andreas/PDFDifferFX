@@ -2,4 +2,4 @@ language: java
 
 jdk:
   # Test on Open JDK 8 on Travis
-  - openjdk8
+  - openjdk11
