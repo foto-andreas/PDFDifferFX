@@ -34,7 +34,7 @@ task zip(type: Zip) {
     from('lib/') {
         into('lib')
     }
-    from('C:/Program Files/Java/jdk1.8.0_101/jre') {
+    from("$System.env.JAVA_HOME") {
         into('jre64')
     }
     from('PDFDifferFx.sh')
